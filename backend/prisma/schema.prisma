@@ -1,0 +1,57 @@
+// Prisma Schema for 劳动者之盾 Legal Aid Platform
+// PostgreSQL database with TypeScript ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Consultation session
+model Consultation {
+  id          String   @id @default(uuid())
+  sessionId   String   @unique
+  issueType   String?  // wage_arrears | illegal_deduction | overtime_penalty | work_injury | labor_relation
+  platform    String?  // 美团 | 滴滴 | 饿了么 | 快手 | other
+  occurDate   String?
+  amount      String?
+  description String?  @db.Text
+  currentStep Int      @default(1)
+  status      String   @default("active") // active | completed | abandoned
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  messages  Message[]
+  materials Material[]
+}
+
+// Chat message
+model Message {
+  id             String       @id @default(uuid())
+  consultationId String
+  role           String       // user | assistant
+  content        String       @db.Text
+  suggestions    String[]     // AI-generated quick reply suggestions
+  createdAt      DateTime     @default(now())
+
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([consultationId])
+}
+
+// Generated legal material
+model Material {
+  id             String       @id @default(uuid())
+  consultationId String
+  type           String       // complaint_letter | arbitration_application | evidence_list
+  title          String
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([consultationId])
+}
